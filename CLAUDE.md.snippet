@@ -1,0 +1,2 @@
+# xcheck — cross-model review (opt-in flag)
+`xcheck` / `xcheck-fast` (and `xcheck plan` / `xcheck code`, modifiers `effort=` `model=` `rounds=` `round_timeout=` `inspect=off` `handoff=`) anywhere in my prompt → load the **`claudex-loop`** skill and follow its "xcheck" section exactly. `xcheck-handoff` → same skill, its "xcheck-handoff" section: hand the running loop to a fresh Claude session on the SAME Codex thread (never a new thread, no Codex call). Opt-in only — no `xcheck` in my prompt = no Codex session. Never `/codex-build` under xcheck. I run all commits myself.
