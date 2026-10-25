@@ -181,6 +181,7 @@ def gate(before):   # every loop this session closed: each <sid>.<loop>.done eli
         entries.append({"loop": loop, "outcome": kv.get("outcome", "?"), "kv": kv, "label": os.path.basename(kv["_line3"].rstrip("/")) or loop})   # line 3 = WORKSPACE; an older 1–2-line record → the loop id
     log("gate", {"candidates": len(names), "eligible": len(entries), "before": before})
     return entries
+resume_hint = f"resume: /resume in the Claude Code panel of {home} → " + (f'"{name}" (session {sid})' if name else f"session {sid}")   # the editor's picker lists the session (started in `home`, under `name`); never a bare `claude`, which would resolve the terminal CLI from PATH
 def deliver(entries):   # the human gate: clipboard, inbox (always, and first, so the popup can name it), ONE notification, finish
     lines, msgs = [], []
     for e in entries:
@@ -198,7 +199,7 @@ def deliver(entries):   # the human gate: clipboard, inbox (always, and first, s
     else: clip = clipboard(b"".join(f"=== {l} ===\n".encode() + nl(b) + b"\n" for l, b in msgs))
     stamp = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())
     inbox_dir = os.path.join(os.path.dirname(A.sessions_dir), "inbox"); ipath = os.path.join(inbox_dir, f"{stamp}-{sid[:8]}.md")
-    head = [f"# {TITLE}", "", f"session: {sid}" + (f" ({name})" if name else ""), f"time: {stamp}", ""] + lines + ["", f"clipboard: {clip}", f"log: {base}.log", f"resume: claude --resume {sid}"]
+    head = [f"# {TITLE}", "", f"session: {sid}" + (f" ({name})" if name else ""), f"time: {stamp}", ""] + lines + ["", f"clipboard: {clip}", f"log: {base}.log", resume_hint]
     try:
         os.makedirs(inbox_dir, mode=0o700, exist_ok=True)
         with os.fdopen(os.open(ipath, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600), "wb") as f:
@@ -206,7 +207,7 @@ def deliver(entries):   # the human gate: clipboard, inbox (always, and first, s
             for l, b in msgs: f.write(f"\n## {l}\n\n".encode() + nl(b))
         inbox = ipath; log("inbox", ipath)
     except OSError as x: log("inbox-failed", str(x)); inbox = f"NOT written ({x})"
-    notify(TITLE, "\n".join(lines + [f"clipboard: {clip}", f"inbox: {inbox}", f"resume: claude --resume {sid}"]))
+    notify(TITLE, "\n".join(lines + [f"clipboard: {clip}", f"inbox: {inbox}", resume_hint]))
     finish("done:" + "+".join(e["outcome"] for e in entries))
 def decide(before=None):   # after a turn's result (before = its consumption time: only earlier signals count) or the quiet timeout (before=None: everything counts)
     entries = gate(before)

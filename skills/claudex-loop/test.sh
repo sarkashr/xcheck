@@ -8,7 +8,7 @@
 #   bash skills/claudex-loop/test.sh                  # exit 0 = all green; writes only under one mktemp dir per run
 #   TMPDIR=/some/writable/dir bash …/test.sh          # when /tmp is not writable (read-only sandboxes)
 
-EXPECTED=1153   # passing checks per mode — update deliberately when tests are added or removed
+EXPECTED=1158   # passing checks per mode — update deliberately when tests are added or removed
 here=$(cd "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
 LIB="$here/lib.sh"
 
@@ -880,12 +880,12 @@ mkhandoff() {   # mkhandoff <file>: fresh loop, accepted REVISE, arbitrated, han
   HANDOFF_CLIPBOARD=off xl_handoff_done "$1" >/dev/null 2>&1; HFX=$1
 }
 # launcher runner: run successor.py directly (foreground, bounded) against the fake claude with a scenario
-runl() {   # runl <scenario-file> [extra env assignments via env] → LRC, FAKE_DIR set; the claim starts as a reservation
+runl() {   # runl <scenario-file> [successor.py args…] [extra env assignments via env] → LRC, FAKE_DIR set; the claim starts as a reservation
   FAKE_DIR="$work/fake.$RANDOM$RANDOM"; mkdir -p "$FAKE_DIR"; rm -f "$FAKE_DIR/notify.txt" "$FAKE_DIR/clip.out"
   CLAIMD="$MK.spawn"; rm -rf "$CLAIMD"; mkdir -p "$CLAIMD"; printf 'reserved=1 hop=1\n' > "$CLAIMD/claim"
   export FAKE_DIR FAKE_SCENARIO=$1 FAKE_SESSIONS=$SESS FAKE_LOOP=$LOOPID
   LRC=0; timeout 60 python3 "${SUCC:-$here/successor.py}" --claim "$CLAIMD/claim" --sessions-dir "$SESS" --loop-id "$LOOPID" --handoff "$HFX" \
-    --workspace "$R" --log-file "$L" --stage plan --phase 1 --thread "$THREAD_ID" --hop 1 --execpath "$SP/bin/claude" --spawn-dir "$SP/out" >/dev/null 2>&1 || LRC=$?
+    --workspace "$R" --log-file "$L" --stage plan --phase 1 --thread "$THREAD_ID" --hop 1 --execpath "$SP/bin/claude" --spawn-dir "$SP/out" "${@:2}" >/dev/null 2>&1 || LRC=$?
   SID=$(cat "$FAKE_DIR/sid.txt" 2>/dev/null); LJ="$SP/out/$SID.jsonl"
 }
 lfin() { grep -o '"kind": "finish", "ev": "[^"]*"' "$LJ" | tail -1 | sed 's/.*"ev": "//; s/"$//'; }
@@ -951,7 +951,16 @@ check upair "$FAKE_DIR/notify.txt"; check has "xcheck — waiting on you" "$FAKE
 check has "$LOOPID ($LOOPID): commit message ready" "$FAKE_DIR/notify.txt"                                 # (b8) a 2-line record (no workspace line) → the loop id labels it
 INB="${SESS%/*}/inbox"; IBF=$(ls "$INB"/*-"${SID:0:8}".md 2>/dev/null | head -1)
 check test -f "$IBF"; check [ "$(stat -c %a "$IBF" 2>/dev/null)" = 600 ]; check [ "$(stat -c %a "$INB")" = 700 ]; check has "$IBF" "$FAKE_DIR/notify.txt"   # the inbox, named in the notice
-check has "chore(x): the message" "$IBF"; check has "resume: claude --resume $SID" "$IBF"; check [ "$(grep -c '"kind": "notify-rc", "ev": {"rc": 0' "$LJ")" = 1 ]
+check has "chore(x): the message" "$IBF"; check [ "$(grep -c '"kind": "notify-rc", "ev": {"rc": 0' "$LJ")" = 1 ]
+# the resume hint names the editor's /resume picker, never the terminal `claude`: unnamed (no --parent), home = the WORKSPACE
+RU="resume: /resume in the Claude Code panel of $R → session $SID"; check has "$RU" "$IBF"; check has "$RU" "$FAKE_DIR/notify.txt"
+checknot grep -q 'claude --resume' "$IBF"; checknot grep -q 'claude --resume' "$FAKE_DIR/notify.txt"
+# (b15) a named hop in a session home that differs from the WORKSPACE → the hint names that home and the hop's /resume name
+HOMEX="$work/home.b11"; mkdir -p "$HOMEX"; PX=aaaaaaaa-0000-4000-8000-000000000001; CX=bbbbbbbb-0000-4000-8000-000000000002
+SPAWN_QUIET_MIN=0.1 runl "$SP/sc-b.sh" --parent "$PX" --chain-root "$CX" --session-home "$HOMEX"
+IBF=$(ls "$INB"/*-"${SID:0:8}".md 2>/dev/null | head -1)                                                     # runl moved SID and FAKE_DIR, not IBF
+NX="xcheck hop 1 · $(basename "${L%.*}") · parent ${PX:0:8} · chain ${CX:0:8}"; RN="resume: /resume in the Claude Code panel of $HOMEX → \"$NX\" (session $SID)"
+check has "$RN" "$IBF"; check has "$RN" "$FAKE_DIR/notify.txt"
 # (b2) .done with no result following → acted on at the quiet timeout
 cat > "$SP/sc-b2.sh" <<'SC'
 say launched; result; sleep 0.2; printf 'outcome=commit payload=file at=1\n%s\n' "$FAKE_PAYLOAD" > "$MARKER.done"; sleep 30

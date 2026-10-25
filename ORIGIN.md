@@ -9,7 +9,7 @@ quota-conscious, and it took a different route to rigour.
 ## What is different, and why
 
 1. **Prose skills plus a small bash library, no Python runner.** Claude Code drives `codex exec` /
-   `codex exec resume` directly; `claudex-loop/lib.sh` (helpers `xl_*`, 1153 offline checks run in a plain and
+   `codex exec resume` directly; `claudex-loop/lib.sh` (helpers `xl_*`, 1158 offline checks run in a plain and
    a strict shell) enforces the mechanics that prose alone leaves to discretion. Every command Claude runs
    stays visible in the transcript.
 

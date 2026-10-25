@@ -44,7 +44,7 @@ satisfied with the results.
 |---|---|
 | `skills/claudex-loop/` | The entry point: the `xcheck` flag, the four-phase loop (recon → interview → Codex plan review → build with Codex inspection), `xcheck-handoff`, and the one-time setup guide `SETUP.md` |
 | `skills/claudex-loop/lib.sh` | The mechanics, as bash helpers (`xl_*`): durable loop state, approval bound to the plan's bytes, thread and model verification, the inspection fingerprint, the staged-content gate, the automatic handoff, the Codex thread rotation |
-| `skills/claudex-loop/test.sh` | The library's offline test suite — 1153 checks, run in a plain and a strict shell, no Codex call |
+| `skills/claudex-loop/test.sh` | The library's offline test suite — 1158 checks, run in a plain and a strict shell, no Codex call |
 | `skills/claudex-loop/spawn-successor.sh`, `successor.py` | Optional: start the next Claude session by itself when a long loop hands off |
 | `skills/codex-review/` | The plan-review loop on its own, for a plan you already have |
 | `skills/codex-build/` | Optional, and NOT part of `xcheck`: Codex implements a frozen spec with write access while Claude reviews |
@@ -84,7 +84,7 @@ git clone <this repo> ~/xcheck && cd ~/xcheck
 ./install.sh                          # links the five skills into ~/.claude/skills/
 # or: ./install.sh --project /path/to/repo   (that repo's .claude/skills/ only)
 cat CLAUDE.md.snippet >> ~/.claude/CLAUDE.md
-bash skills/claudex-loop/test.sh      # offline self-test: "1153 checks × 2 modes green"
+bash skills/claudex-loop/test.sh      # offline self-test: "1158 checks × 2 modes green"
 ```
 
 Then follow `skills/claudex-loop/SETUP.md` once: install and log in to the Codex CLI, set
